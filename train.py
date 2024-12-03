@@ -9,11 +9,11 @@ import torchvision.transforms as transforms
 from tqdm import tqdm
 
 # Hyperparameters
-num_epochs = 64
-batch_size = 128
+num_epochs = 128
+batch_size = 256
 
 # Experiment settings
-learning_rates = [0.001, 0.005, 0.01, 0.05, 0.1] 
+learning_rates = [0.001] 
 optimizers = ['SGD'] 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
@@ -77,7 +77,7 @@ for lr in learning_rates:
             optimizer = optim.SGD(model.parameters(), lr=lr)
 
         # Create a unique log file name
-        log_filename = f'logs/bs{batch_size}_lr{lr}_opt{optimizer_name}.csv'
+        log_filename = f'logs1/bs{batch_size}_lr{lr}_opt{optimizer_name}.csv'
         
         for epoch in range(num_epochs):
             model.train()
