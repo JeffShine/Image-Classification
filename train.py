@@ -7,15 +7,17 @@ import torch.optim as optim
 import torchvision.transforms as transforms
 
 from tqdm import tqdm
-
+import wandb
+import os
 # Hyperparameters
 num_epochs = 128
 batch_size = 256
 
 # Experiment settings
-learning_rates = [0.001] 
-optimizers = ['SGD'] 
-device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+learning_rates = [0.01, 0.001, 0.0001] 
+optimizers = ['Adam'] 
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Data augmentation and normalization for training
 transform = transforms.Compose([
@@ -32,7 +34,7 @@ val_dataset = torchvision.datasets.ImageFolder(root='./dataset/data/mini-imagene
 val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
 
 criterion = nn.CrossEntropyLoss()
-
+save_path = "save_dir"
 def evaluate_model(dataloader):
     model.eval()
     total_loss = 0.0
@@ -62,7 +64,16 @@ def evaluate_model(dataloader):
 
 for lr in learning_rates:
     for optimizer_name in optimizers:
-
+        print(f"lr: {lr}, optimizer: {optimizer_name}")
+        run = wandb.init(
+            project="mini-imagenet",
+            config={
+                "learning_rate": lr,
+                "optimizer": optimizer_name,
+                "epochs": num_epochs,
+                "batch_size": batch_size,
+            },
+        )
         # Load pre-trained ResNet model
         model = models.resnet18(weights=None)
         num_ftrs = model.fc.in_features
@@ -76,9 +87,7 @@ for lr in learning_rates:
         elif optimizer_name == 'SGD':
             optimizer = optim.SGD(model.parameters(), lr=lr)
 
-        # Create a unique log file name
-        log_filename = f'logs1/bs{batch_size}_lr{lr}_opt{optimizer_name}.csv'
-        
+        best_acc = 0.0
         for epoch in range(num_epochs):
             model.train()
             running_loss = 0.0
@@ -91,12 +100,24 @@ for lr in learning_rates:
                 loss.backward()
                 optimizer.step()
                 running_loss += loss.item()
+                wandb.log({"running_loss": loss.item()})
 
             print(f'Epoch [{epoch+1}/{num_epochs}], Running Loss: {running_loss/len(train_loader):.4f}')
-    
+
             loss_train, acc_train = evaluate_model(train_loader)
             loss_val, acc_val = evaluate_model(val_loader)
-            with open(log_filename, 'a') as f:
-                f.write(f'{epoch+1},{loss_train:.4f},{acc_train:.4f},{loss_val:.4f},{acc_val:.4f}\n')
+
+            wandb.log({
+                "train_loss": loss_train,
+                "train_acc": acc_train,
+                "val_loss": loss_val,
+                "val_acc": acc_val,
+            })  
+
+            if acc_val > best_acc:
+                best_acc = acc_val
+                torch.save(model.state_dict(), os.path.join(save_path, f"best_model_{optimizer_name}_{lr}.pth"))
+            
+        wandb.finish()
 
 print('Training complete')
