@@ -11,6 +11,9 @@ from torchvision.models._api import register_model, Weights, WeightsEnum
 from torchvision.models._meta import _IMAGENET_CATEGORIES
 from torchvision.models._utils import _ovewrite_named_param, handle_legacy_interface
 
+from torchsummary import summary
+from torchprofile import profile_macs
+
 
 __all__ = [
     "ResNet",
@@ -838,3 +841,17 @@ def resnet18_custom(*, weights: Optional[ResNet18_Weights] = None, progress: boo
     weights = ResNet18_Weights.verify(weights)
 
     return _resnet_custom(BasicBlock, [2, 2, 2, 2], weights, progress, **kwargs)
+
+def main():
+    model = resnet18_custom(weights=None)
+    model = model.to('cuda')
+    print(summary(model, (3, 224, 224), device='cuda'))
+    
+    # 计算FLOPs
+    inputs = torch.randn(1, 3, 224, 224).to('cuda')
+    macs = profile_macs(model, inputs)
+    flops = 2 * macs  # 通常FLOPs是MACs的两倍
+    print(f"FLOPs: {flops / 1e9:.2f} GFLOPs")
+
+if __name__ == '__main__':
+    main()

@@ -27,6 +27,14 @@ transform = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
 
+# 数据增强和归一化的预处理步骤:
+# 1. RandomResizedCrop(224): 随机裁剪图像并调整大小到224x224
+# 2. RandomHorizontalFlip(): 随机水平翻转图像,增加数据多样性
+# 3. ToTensor(): 将PIL图像转换为Tensor格式
+# 4. Normalize(): 使用ImageNet数据集的均值和标准差进行归一化
+#    - 均值: [0.485, 0.456, 0.406] 
+#    - 标准差: [0.229, 0.224, 0.225]
+
 # Load dataset
 train_dataset = torchvision.datasets.ImageFolder(root='./dataset/data/mini-imagenet/train', transform=transform)
 train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
